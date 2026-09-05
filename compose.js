@@ -3,8 +3,14 @@ let fontSize = 13;
 const textInput = document.getElementById('textInput');
 const previewLines = document.getElementById('previewLines');
 const sizeInput = document.getElementById('sizeInput');
+const spacingInput = document.getElementById('spacingInput');
+const boldToggle = document.getElementById('boldToggle');
+const italicToggle = document.getElementById('italicToggle');
 const colorPicker = document.getElementById('colorPicker');
 const textColorPicker = document.getElementById('textColorPicker');
+const strokeWidthInput = document.getElementById('strokeWidth');
+const strokeWidthValue = document.getElementById('strokeWidthValue');
+const strokeColorPicker = document.getElementById('strokeColorPicker');
 const bgToggle = document.getElementById('bgToggle');
 const fontSelect = document.getElementById('fontSelect');
 const chatScope = document.getElementById('chatScope');
@@ -17,11 +23,30 @@ const stage = document.getElementById('stage');
 const stageWrap = document.getElementById('stageWrap');
 
 const chatOverlay = document.getElementById('chatOverlay');
-const rotateHandle = document.getElementById('rotateHandle');
 const rotationInput = document.getElementById('rotationInput');
+const rotationRange = document.getElementById('rotationRange');
+const rotateLeft = document.getElementById('rotateLeft');
+const rotateRight = document.getElementById('rotateRight');
 
 const selectedKeys = new Set();
 let customColorsByKey = {};
+let strokeWidth = Number(strokeWidthInput.value);
+let lineSpacing = 0;
+
+function getChatLineHeight() {
+  return (fontSize * 1.3) + lineSpacing;
+}
+
+function updateSpacingControl() {
+  spacingInput.value = lineSpacing === 0 ? 'Auto' : `+${lineSpacing}px`;
+  textInput.style.lineHeight = `${20 + lineSpacing}px`;
+}
+
+function getCanvasFont(canvasFontFamily) {
+  const style = italicToggle.checked ? 'italic ' : '';
+  const weight = boldToggle.checked ? '700 ' : '400 ';
+  return `${style}${weight}${fontSize}px ${canvasFontFamily}`;
+}
 
 let rotationDeg = 0;
 
@@ -38,12 +63,27 @@ const FONT_MAP = {
   firasans: { css: '"Fira Sans", Tahoma, Arial, sans-serif', canvas: '"Fira Sans", Tahoma, Arial, sans-serif', load: 'Fira Sans' },
   rubik: { css: '"Rubik", Tahoma, Arial, sans-serif', canvas: '"Rubik", Tahoma, Arial, sans-serif', load: 'Rubik' },
   sourcesans3: { css: '"Source Sans 3", Tahoma, Arial, sans-serif', canvas: '"Source Sans 3", Tahoma, Arial, sans-serif', load: 'Source Sans 3' },
+  manrope: { css: '"Manrope", Tahoma, Arial, sans-serif', canvas: '"Manrope", Tahoma, Arial, sans-serif', load: 'Manrope' },
+  dmsans: { css: '"DM Sans", Tahoma, Arial, sans-serif', canvas: '"DM Sans", Tahoma, Arial, sans-serif', load: 'DM Sans' },
+  worksans: { css: '"Work Sans", Tahoma, Arial, sans-serif', canvas: '"Work Sans", Tahoma, Arial, sans-serif', load: 'Work Sans' },
+  barlow: { css: '"Barlow", Tahoma, Arial, sans-serif', canvas: '"Barlow", Tahoma, Arial, sans-serif', load: 'Barlow' },
+  quicksand: { css: '"Quicksand", Tahoma, Arial, sans-serif', canvas: '"Quicksand", Tahoma, Arial, sans-serif', load: 'Quicksand' },
+  archivo: { css: '"Archivo", Tahoma, Arial, sans-serif', canvas: '"Archivo", Tahoma, Arial, sans-serif', load: 'Archivo' },
+  spacegrotesk: { css: '"Space Grotesk", Tahoma, Arial, sans-serif', canvas: '"Space Grotesk", Tahoma, Arial, sans-serif', load: 'Space Grotesk' },
+  playfair: { css: '"Playfair Display", Tahoma, Arial, sans-serif', canvas: '"Playfair Display", Tahoma, Arial, sans-serif', load: 'Playfair Display' },
+  merriweather: { css: '"Merriweather", Tahoma, Arial, sans-serif', canvas: '"Merriweather", Tahoma, Arial, sans-serif', load: 'Merriweather' },
 
   cairo: { css: '"Cairo", Tahoma, Arial, sans-serif', canvas: '"Cairo", Tahoma, Arial, sans-serif', load: 'Cairo' },
   tajawal: { css: '"Tajawal", Tahoma, Arial, sans-serif', canvas: '"Tajawal", Tahoma, Arial, sans-serif', load: 'Tajawal' },
   notosansarabic: { css: '"Noto Sans Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Sans Arabic", Tahoma, Arial, sans-serif', load: 'Noto Sans Arabic' },
   notokufiarabic: { css: '"Noto Kufi Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Kufi Arabic", Tahoma, Arial, sans-serif', load: 'Noto Kufi Arabic' },
   notonaskharabic: { css: '"Noto Naskh Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Naskh Arabic", Tahoma, Arial, sans-serif', load: 'Noto Naskh Arabic' },
+  ibmplexarabic: { css: '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif', canvas: '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif', load: 'IBM Plex Sans Arabic' },
+  almarai: { css: '"Almarai", Tahoma, Arial, sans-serif', canvas: '"Almarai", Tahoma, Arial, sans-serif', load: 'Almarai' },
+  readexpro: { css: '"Readex Pro", Tahoma, Arial, sans-serif', canvas: '"Readex Pro", Tahoma, Arial, sans-serif', load: 'Readex Pro' },
+  changa: { css: '"Changa", Tahoma, Arial, sans-serif', canvas: '"Changa", Tahoma, Arial, sans-serif', load: 'Changa' },
+  amiri: { css: '"Amiri", Tahoma, Arial, sans-serif', canvas: '"Amiri", Tahoma, Arial, sans-serif', load: 'Amiri' },
+  markazi: { css: '"Markazi Text", Tahoma, Arial, sans-serif', canvas: '"Markazi Text", Tahoma, Arial, sans-serif', load: 'Markazi Text' },
 
   poppins: { css: '"Poppins", Tahoma, Arial, sans-serif', canvas: '"Poppins", Tahoma, Arial, sans-serif', load: 'Poppins' },
   montserrat: { css: '"Montserrat", Tahoma, Arial, sans-serif', canvas: '"Montserrat", Tahoma, Arial, sans-serif', load: 'Montserrat' },
@@ -69,10 +109,10 @@ function applyFont(key) {
 fontSelect.addEventListener('change', () => applyFont(fontSelect.value));
 
 function setRotation(deg) {
-  rotationDeg = deg;
+  rotationDeg = Math.max(-180, Math.min(180, Math.round(deg)));
   chatOverlay.style.transform = `rotate(${rotationDeg}deg)`;
   if (rotationInput) rotationInput.value = `${Math.round(rotationDeg)}°`;
-  clampOverlayToStage();
+  if (rotationRange) rotationRange.value = String(rotationDeg);
 }
 
 /* ✅ stage على قد الصورة (بعد الرفع فقط) */
@@ -307,10 +347,16 @@ function updatePreview(lines, keys) {
     const row = document.createElement('div');
     row.className = 'chat-line';
     row.style.fontSize = fontSize + 'px';
+    row.style.lineHeight = `${getChatLineHeight()}px`;
+    row.style.fontWeight = boldToggle.checked ? '700' : '400';
+    row.style.fontStyle = italicToggle.checked ? 'italic' : 'normal';
 
     const span = document.createElement('span');
     span.className = 'chat-span';
     span.style.color = finalColor;
+    span.style.lineHeight = `${getChatLineHeight()}px`;
+    span.style.webkitTextStroke = `${strokeWidth}px ${strokeColorPicker.value}`;
+    span.style.paintOrder = 'stroke fill';
 
     const hasText = !!displayText.trim();
     if (hasText && bgToggle.checked) span.style.background = colorPicker.value;
@@ -323,6 +369,7 @@ function updatePreview(lines, keys) {
 }
 
 function updateAll() {
+  updateSpacingControl();
   const lines = textInput.value.split('\n');
   const keys = buildLineKeys(lines);
   const keysSet = new Set(keys);
@@ -344,6 +391,18 @@ window.addEventListener('resize', () => {
 
 colorPicker.addEventListener('input', updateAll);
 bgToggle.addEventListener('change', updateAll);
+boldToggle.addEventListener('change', updateAll);
+italicToggle.addEventListener('change', updateAll);
+strokeWidthInput.addEventListener('input', () => {
+  const nextStrokeWidth = Number(strokeWidthInput.value);
+  if (strokeWidth === 0 && nextStrokeWidth > 0) {
+    bgToggle.checked = false;
+  }
+  strokeWidth = nextStrokeWidth;
+  strokeWidthValue.value = `${strokeWidth}px`;
+  updateAll();
+});
+strokeColorPicker.addEventListener('input', updateAll);
 
 function increaseSize() {
   fontSize += 1;
@@ -361,6 +420,22 @@ function decreaseSize() {
 }
 window.increaseSize = increaseSize;
 window.decreaseSize = decreaseSize;
+
+function increaseSpacing() {
+  if (lineSpacing < 20) lineSpacing += 1;
+  updateAll();
+}
+function decreaseSpacing() {
+  if (lineSpacing > 0) lineSpacing -= 1;
+  updateAll();
+}
+function resetSpacing() {
+  lineSpacing = 0;
+  updateAll();
+}
+window.increaseSpacing = increaseSpacing;
+window.decreaseSpacing = decreaseSpacing;
+window.resetSpacing = resetSpacing;
 
 /* Upload background */
 bgUpload.addEventListener('change', () => {
@@ -402,22 +477,18 @@ function clampOverlayToStage() {
 
   const stageRect = stage.getBoundingClientRect();
   const overlayRect = chatOverlay.getBoundingClientRect();
-
-  let leftPx = parseFloat(chatOverlay.style.left || '0');
-  let topPx = parseFloat(chatOverlay.style.top || '0');
-
-  const ow = overlayRect.width;
-  const oh = overlayRect.height;
-
-  leftPx = Math.max(0, Math.min(leftPx, stageRect.width - ow));
-  topPx = Math.max(0, Math.min(topPx, stageRect.height - oh));
-
-  chatOverlay.style.left = leftPx + 'px';
-  chatOverlay.style.top = topPx + 'px';
+  const leftPx = parseFloat(chatOverlay.style.left || '0');
+  const topPx = parseFloat(chatOverlay.style.top || '0');
+  const minVisible = 24;
+  const maxLeft = stageRect.width - minVisible;
+  const maxTop = stageRect.height - minVisible;
+  const nextLeft = Math.max(minVisible - overlayRect.width, Math.min(leftPx, maxLeft));
+  const nextTop = Math.max(minVisible - overlayRect.height, Math.min(topPx, maxTop));
+  chatOverlay.style.left = `${nextLeft}px`;
+  chatOverlay.style.top = `${nextTop}px`;
 }
 
 function onDragStart(e) {
-  if (e.target === rotateHandle) return;
   e.preventDefault();
   dragging = true;
   chatOverlay.classList.add('dragging');
@@ -433,7 +504,6 @@ function onDragStart(e) {
 function onDragMove(e) {
   if (!dragging) return;
 
-  const stageRect = stage.getBoundingClientRect();
   const p = getClientPoint(e);
 
   const dx = p.x - startClientX;
@@ -441,12 +511,6 @@ function onDragMove(e) {
 
   let leftPx = startLeft + dx;
   let topPx = startTop + dy;
-
-  const ow = chatOverlay.getBoundingClientRect().width;
-  const oh = chatOverlay.getBoundingClientRect().height;
-
-  leftPx = Math.max(0, Math.min(leftPx, stageRect.width - ow));
-  topPx = Math.max(0, Math.min(topPx, stageRect.height - oh));
 
   chatOverlay.style.left = leftPx + 'px';
   chatOverlay.style.top = topPx + 'px';
@@ -465,59 +529,9 @@ chatOverlay.addEventListener('touchstart', onDragStart, { passive: false });
 window.addEventListener('touchmove', onDragMove, { passive: false });
 window.addEventListener('touchend', onDragEnd);
 
-/* Rotate handle */
-let rotating = false;
-let rotateCenter = { x: 0, y: 0 };
-let rotateStartPointerAngle = 0;
-let rotateStartRotation = 0;
-
-function angleFromCenter(cx, cy, x, y) {
-  const rad = Math.atan2(y - cy, x - cx);
-  return rad * (180 / Math.PI);
-}
-
-function getOverlayCenter() {
-  const overlayRect = chatOverlay.getBoundingClientRect();
-  return { cx: overlayRect.left + overlayRect.width / 2, cy: overlayRect.top + overlayRect.height / 2 };
-}
-
-function onRotateStart(e) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  rotating = true;
-  chatOverlay.classList.add('rotating');
-
-  const p = getClientPoint(e);
-  const c = getOverlayCenter();
-  rotateCenter = { x: c.cx, y: c.cy };
-
-  rotateStartPointerAngle = angleFromCenter(rotateCenter.x, rotateCenter.y, p.x, p.y);
-  rotateStartRotation = rotationDeg;
-}
-
-function onRotateMove(e) {
-  if (!rotating) return;
-  e.preventDefault();
-
-  const p = getClientPoint(e);
-  const currentPointerAngle = angleFromCenter(rotateCenter.x, rotateCenter.y, p.x, p.y);
-  const delta = currentPointerAngle - rotateStartPointerAngle;
-  setRotation(rotateStartRotation + delta);
-}
-
-function onRotateEnd() {
-  rotating = false;
-  chatOverlay.classList.remove('rotating');
-}
-
-rotateHandle.addEventListener('mousedown', onRotateStart);
-window.addEventListener('mousemove', onRotateMove);
-window.addEventListener('mouseup', onRotateEnd);
-
-rotateHandle.addEventListener('touchstart', onRotateStart, { passive: false });
-window.addEventListener('touchmove', onRotateMove, { passive: false });
-window.addEventListener('touchend', onRotateEnd);
+rotationRange.addEventListener('input', () => setRotation(Number(rotationRange.value)));
+rotateLeft.addEventListener('click', () => setRotation(rotationDeg - 15));
+rotateRight.addEventListener('click', () => setRotation(rotationDeg + 15));
 
 /* Export composite (wrap like preview + rotation) */
 async function downloadComposite() {
@@ -547,6 +561,7 @@ async function downloadComposite() {
   const imgRect = bgImg.getBoundingClientRect();
   const scaleX = naturalW / imgRect.width;
   const scaleY = naturalH / imgRect.height;
+  const renderScale = (scaleX + scaleY) / 2;
 
   const overlayLeft = parseFloat(chatOverlay.style.left || '0');
   const overlayTop = parseFloat(chatOverlay.style.top || '0');
@@ -558,15 +573,14 @@ async function downloadComposite() {
   const keys = buildLineKeys(lines);
 
   const canvasFontFamily = (FONT_MAP[currentFontKey]?.canvas) || FONT_MAP.tahoma.canvas;
-  ctx.font = `${fontSize}px ${canvasFontFamily}`;
+  ctx.font = getCanvasFont(canvasFontFamily).replace(`${fontSize}px`, `${fontSize * renderScale}px`);
   ctx.textBaseline = 'top';
 
-  const lineHeight = fontSize + 4;
-  const paddingX = 4;
-  const paddingY = 2;
+  const lineHeight = (fontSize + 4 + lineSpacing) * renderScale;
+  const paddingX = 4 * renderScale;
+  const paddingY = 2 * renderScale;
 
-  const overlayRect = previewLines.getBoundingClientRect();
-  const maxTextWidth = (620 * scaleX) - (paddingX * 2);
+  const maxTextWidth = (620 * renderScale) - (paddingX * 2);
 
   const segments = [];
   let maxSegWidth = 0;
@@ -595,7 +609,8 @@ async function downloadComposite() {
     }
   }
 
-  const blockW = maxSegWidth + (paddingX * 2);
+  const strokePadding = strokeWidth * renderScale;
+  const blockW = maxSegWidth + (paddingX * 2) + (strokePadding * 2);
   const blockH = segments.length * lineHeight;
 
   const rad = (rotationDeg * Math.PI) / 180;
@@ -614,7 +629,7 @@ async function downloadComposite() {
   for (const seg of segments) {
     if (seg.hasBg && seg.text.trim()) {
       ctx.fillStyle = colorPicker.value;
-      ctx.fillRect(originX, y, seg.width + (paddingX * 2), lineHeight);
+      ctx.fillRect(originX, y, seg.width + (paddingX * 2) + (strokePadding * 2), lineHeight);
     }
     y += lineHeight;
   }
@@ -623,7 +638,13 @@ async function downloadComposite() {
   y = originY;
   for (const seg of segments) {
     ctx.fillStyle = seg.color;
-    ctx.fillText(seg.text, originX + paddingX, y + paddingY);
+    if (strokeWidth > 0) {
+      ctx.strokeStyle = strokeColorPicker.value;
+      ctx.lineWidth = strokeWidth * 2 * renderScale;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(seg.text, originX + paddingX + strokePadding, y + paddingY);
+    }
+    ctx.fillText(seg.text, originX + paddingX + strokePadding, y + paddingY);
     y += lineHeight;
   }
 
@@ -657,6 +678,7 @@ window.downloadComposite = downloadComposite;
 /* Init */
 applyFont('tahoma');
 setRotation(0);
+strokeWidthValue.value = `${strokeWidth}px`;
 updateAll();
 
 /* ✅ اول ما تفتح الصفحة: نخفي الـ stage نهائي */

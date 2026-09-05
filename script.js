@@ -3,8 +3,14 @@ let fontSize = 13;
 const textInput = document.getElementById('textInput');
 const previewLines = document.getElementById('previewLines');
 const sizeInput = document.getElementById('sizeInput');
+const spacingInput = document.getElementById('spacingInput');
+const boldToggle = document.getElementById('boldToggle');
+const italicToggle = document.getElementById('italicToggle');
 const colorPicker = document.getElementById('colorPicker');
 const textColorPicker = document.getElementById('textColorPicker');
+const strokeWidthInput = document.getElementById('strokeWidth');
+const strokeWidthValue = document.getElementById('strokeWidthValue');
+const strokeColorPicker = document.getElementById('strokeColorPicker');
 const bgToggle = document.getElementById('bgToggle');
 const fontSelect = document.getElementById('fontSelect');
 const chatScope = document.getElementById('chatScope');
@@ -14,6 +20,23 @@ const copyBtn = document.getElementById('copyText');
 
 const selectedKeys = new Set();
 let customColorsByKey = {};
+let strokeWidth = Number(strokeWidthInput.value);
+let lineSpacing = 0;
+
+function getChatLineHeight() {
+  return (fontSize * 1.3) + lineSpacing;
+}
+
+function updateSpacingControl() {
+  spacingInput.value = lineSpacing === 0 ? 'Auto' : `+${lineSpacing}px`;
+  textInput.style.lineHeight = `${20 + lineSpacing}px`;
+}
+
+function getCanvasFont(canvasFontFamily) {
+  const style = italicToggle.checked ? 'italic ' : '';
+  const weight = boldToggle.checked ? '700 ' : '400 ';
+  return `${style}${weight}${fontSize}px ${canvasFontFamily}`;
+}
 
 const FONT_MAP = {
   tahoma: { css: 'Tahoma, Arial, sans-serif', canvas: 'Tahoma, Arial, sans-serif', load: 'Tahoma' },
@@ -28,12 +51,27 @@ const FONT_MAP = {
   firasans: { css: '"Fira Sans", Tahoma, Arial, sans-serif', canvas: '"Fira Sans", Tahoma, Arial, sans-serif', load: 'Fira Sans' },
   rubik: { css: '"Rubik", Tahoma, Arial, sans-serif', canvas: '"Rubik", Tahoma, Arial, sans-serif', load: 'Rubik' },
   sourcesans3: { css: '"Source Sans 3", Tahoma, Arial, sans-serif', canvas: '"Source Sans 3", Tahoma, Arial, sans-serif', load: 'Source Sans 3' },
+  manrope: { css: '"Manrope", Tahoma, Arial, sans-serif', canvas: '"Manrope", Tahoma, Arial, sans-serif', load: 'Manrope' },
+  dmsans: { css: '"DM Sans", Tahoma, Arial, sans-serif', canvas: '"DM Sans", Tahoma, Arial, sans-serif', load: 'DM Sans' },
+  worksans: { css: '"Work Sans", Tahoma, Arial, sans-serif', canvas: '"Work Sans", Tahoma, Arial, sans-serif', load: 'Work Sans' },
+  barlow: { css: '"Barlow", Tahoma, Arial, sans-serif', canvas: '"Barlow", Tahoma, Arial, sans-serif', load: 'Barlow' },
+  quicksand: { css: '"Quicksand", Tahoma, Arial, sans-serif', canvas: '"Quicksand", Tahoma, Arial, sans-serif', load: 'Quicksand' },
+  archivo: { css: '"Archivo", Tahoma, Arial, sans-serif', canvas: '"Archivo", Tahoma, Arial, sans-serif', load: 'Archivo' },
+  spacegrotesk: { css: '"Space Grotesk", Tahoma, Arial, sans-serif', canvas: '"Space Grotesk", Tahoma, Arial, sans-serif', load: 'Space Grotesk' },
+  playfair: { css: '"Playfair Display", Tahoma, Arial, sans-serif', canvas: '"Playfair Display", Tahoma, Arial, sans-serif', load: 'Playfair Display' },
+  merriweather: { css: '"Merriweather", Tahoma, Arial, sans-serif', canvas: '"Merriweather", Tahoma, Arial, sans-serif', load: 'Merriweather' },
 
   cairo: { css: '"Cairo", Tahoma, Arial, sans-serif', canvas: '"Cairo", Tahoma, Arial, sans-serif', load: 'Cairo' },
   tajawal: { css: '"Tajawal", Tahoma, Arial, sans-serif', canvas: '"Tajawal", Tahoma, Arial, sans-serif', load: 'Tajawal' },
   notosansarabic: { css: '"Noto Sans Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Sans Arabic", Tahoma, Arial, sans-serif', load: 'Noto Sans Arabic' },
   notokufiarabic: { css: '"Noto Kufi Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Kufi Arabic", Tahoma, Arial, sans-serif', load: 'Noto Kufi Arabic' },
   notonaskharabic: { css: '"Noto Naskh Arabic", Tahoma, Arial, sans-serif', canvas: '"Noto Naskh Arabic", Tahoma, Arial, sans-serif', load: 'Noto Naskh Arabic' },
+  ibmplexarabic: { css: '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif', canvas: '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif', load: 'IBM Plex Sans Arabic' },
+  almarai: { css: '"Almarai", Tahoma, Arial, sans-serif', canvas: '"Almarai", Tahoma, Arial, sans-serif', load: 'Almarai' },
+  readexpro: { css: '"Readex Pro", Tahoma, Arial, sans-serif', canvas: '"Readex Pro", Tahoma, Arial, sans-serif', load: 'Readex Pro' },
+  changa: { css: '"Changa", Tahoma, Arial, sans-serif', canvas: '"Changa", Tahoma, Arial, sans-serif', load: 'Changa' },
+  amiri: { css: '"Amiri", Tahoma, Arial, sans-serif', canvas: '"Amiri", Tahoma, Arial, sans-serif', load: 'Amiri' },
+  markazi: { css: '"Markazi Text", Tahoma, Arial, sans-serif', canvas: '"Markazi Text", Tahoma, Arial, sans-serif', load: 'Markazi Text' },
 
   poppins: { css: '"Poppins", Tahoma, Arial, sans-serif', canvas: '"Poppins", Tahoma, Arial, sans-serif', load: 'Poppins' },
   montserrat: { css: '"Montserrat", Tahoma, Arial, sans-serif', canvas: '"Montserrat", Tahoma, Arial, sans-serif', load: 'Montserrat' },
@@ -275,10 +313,16 @@ function updatePreview(lines, keys) {
     const row = document.createElement('div');
     row.className = 'chat-line';
     row.style.fontSize = fontSize + 'px';
+    row.style.lineHeight = `${getChatLineHeight()}px`;
+    row.style.fontWeight = boldToggle.checked ? '700' : '400';
+    row.style.fontStyle = italicToggle.checked ? 'italic' : 'normal';
 
     const span = document.createElement('span');
     span.className = 'chat-span';
     span.style.color = finalColor;
+    span.style.lineHeight = `${getChatLineHeight()}px`;
+    span.style.webkitTextStroke = `${strokeWidth}px ${strokeColorPicker.value}`;
+    span.style.paintOrder = 'stroke fill';
 
     const hasText = !!displayText.trim();
     if (hasText && bgToggle.checked) span.style.background = colorPicker.value;
@@ -291,6 +335,7 @@ function updatePreview(lines, keys) {
 }
 
 function updateAll() {
+  updateSpacingControl();
   const lines = textInput.value.split('\n');
   const keys = buildLineKeys(lines);
   const keysSet = new Set(keys);
@@ -306,6 +351,18 @@ window.addEventListener('resize', updateAll);
 
 colorPicker.addEventListener('input', updateAll);
 bgToggle.addEventListener('change', updateAll);
+boldToggle.addEventListener('change', updateAll);
+italicToggle.addEventListener('change', updateAll);
+strokeWidthInput.addEventListener('input', () => {
+  const nextStrokeWidth = Number(strokeWidthInput.value);
+  if (strokeWidth === 0 && nextStrokeWidth > 0) {
+    bgToggle.checked = false;
+  }
+  strokeWidth = nextStrokeWidth;
+  strokeWidthValue.value = `${strokeWidth}px`;
+  updateAll();
+});
+strokeColorPicker.addEventListener('input', updateAll);
 
 function increaseSize() {
   fontSize += 1;
@@ -321,6 +378,22 @@ function decreaseSize() {
 }
 window.increaseSize = increaseSize;
 window.decreaseSize = decreaseSize;
+
+function increaseSpacing() {
+  if (lineSpacing < 20) lineSpacing += 1;
+  updateAll();
+}
+function decreaseSpacing() {
+  if (lineSpacing > 0) lineSpacing -= 1;
+  updateAll();
+}
+function resetSpacing() {
+  lineSpacing = 0;
+  updateAll();
+}
+window.increaseSpacing = increaseSpacing;
+window.decreaseSpacing = decreaseSpacing;
+window.resetSpacing = resetSpacing;
 
 /* Copy */
 copyBtn.addEventListener('click', () => {
@@ -348,10 +421,10 @@ async function downloadImage(transparent) {
   const ctx = canvas.getContext('2d');
 
   const canvasFontFamily = (FONT_MAP[currentFontKey]?.canvas) || FONT_MAP.tahoma.canvas;
-  ctx.font = `${fontSize}px ${canvasFontFamily}`;
+  ctx.font = getCanvasFont(canvasFontFamily);
   ctx.textBaseline = 'top';
 
-  const lineHeight = fontSize + 4;
+  const lineHeight = fontSize + 4 + lineSpacing;
   const paddingX = 4;
   const paddingY = 2;
 
@@ -384,10 +457,11 @@ async function downloadImage(transparent) {
     }
   }
 
-  canvas.width = Math.ceil(maxSegWidth + (paddingX * 2) + 10);
+  const strokePadding = strokeWidth;
+  canvas.width = Math.ceil(maxSegWidth + (paddingX * 2) + (strokePadding * 2) + 10);
   canvas.height = Math.ceil((segments.length * lineHeight) + 10);
 
-  ctx.font = `${fontSize}px ${canvasFontFamily}`;
+  ctx.font = getCanvasFont(canvasFontFamily);
   ctx.textBaseline = 'top';
 
   let y = 5;
@@ -395,11 +469,17 @@ async function downloadImage(transparent) {
   for (const seg of segments) {
     if (seg.hasBg && seg.text.trim()) {
       ctx.fillStyle = colorPicker.value;
-      ctx.fillRect(5, y, seg.width + (paddingX * 2), lineHeight);
+      ctx.fillRect(5, y, seg.width + (paddingX * 2) + (strokePadding * 2), lineHeight);
     }
 
     ctx.fillStyle = seg.color;
-    ctx.fillText(seg.text, 5 + paddingX, y + paddingY);
+    if (strokeWidth > 0) {
+      ctx.strokeStyle = strokeColorPicker.value;
+      ctx.lineWidth = strokeWidth * 2;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(seg.text, 5 + paddingX + strokePadding, y + paddingY);
+    }
+    ctx.fillText(seg.text, 5 + paddingX + strokePadding, y + paddingY);
 
     y += lineHeight;
   }
@@ -431,4 +511,5 @@ window.downloadImage = downloadImage;
 
 /* Init */
 applyFont('tahoma');
+strokeWidthValue.value = `${strokeWidth}px`;
 updateAll();

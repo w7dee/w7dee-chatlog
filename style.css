@@ -80,6 +80,33 @@ body{
   text-align:center;
 }
 
+.auto-spacing-btn{
+  height:35px;
+  min-width:52px;
+  padding:0 8px;
+  border:none;
+  border-radius:6px;
+  background:#3a3d44;
+  color:#fff;
+  cursor:pointer;
+}
+
+.text-style-controls{
+  gap:12px;
+}
+.text-style-controls label{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  cursor:pointer;
+}
+.text-style-controls input{
+  width:16px;
+  height:16px;
+  accent-color:#5865f2;
+  cursor:pointer;
+}
+
 .font-select{
   height:35px;
   border:2px solid #404249;
@@ -102,6 +129,23 @@ body{
   display:flex;
   gap:8px;
   align-items:center;
+}
+
+.stroke-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.stroke-controls input[type="range"]{
+  width:110px;
+  accent-color:#5865f2;
+  cursor:pointer;
+}
+.stroke-controls output{
+  min-width:34px;
+  color:#fff;
+  font-size:13px;
+  text-align:center;
 }
 
 .save-in-picker{
@@ -356,6 +400,7 @@ textarea{
   width:100%;
   height:100%;
   object-fit:fill; /* بما أن stage صار نفس أبعاد الصورة، ما نحتاج contain */
+  border-radius:12px;
 }
 
 #chatOverlay{
@@ -382,20 +427,27 @@ textarea{
   text-align:center;
 }
 
-#rotateHandle{
-  position:absolute;
-  width:16px;
-  height:16px;
-  right:-10px;
-  bottom:-10px;
-  border-radius:999px;
-  background:#5865f2;
-  border:2px solid #ffffff;
-  box-shadow:0 2px 8px rgba(0,0,0,.4);
+.rotation-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.rotation-controls input[type="range"]{
+  width:120px;
+  accent-color:#5865f2;
   cursor:grab;
 }
-#chatOverlay.rotating #rotateHandle{ cursor:grabbing; }
-#chatOverlay.rotating{
-  outline:1px dashed rgba(255,255,255,.5);
-  outline-offset:4px;
+.rotation-controls button{
+  height:35px;
+  padding:0 8px;
+  border:0;
+  border-radius:6px;
+  background:#3a3d44;
+  color:#fff;
+  cursor:pointer;
+}
+.rotation-controls output{
+  min-width:44px;
+  color:#fff;
+  text-align:center;
 }
