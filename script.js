@@ -457,7 +457,7 @@ async function downloadImage(transparent) {
     }
   }
 
-  const strokePadding = strokeWidth;
+  const strokePadding = strokeWidth / 2;
   canvas.width = Math.ceil(maxSegWidth + (paddingX * 2) + (strokePadding * 2) + 10);
   canvas.height = Math.ceil((segments.length * lineHeight) + 10);
 
@@ -469,14 +469,16 @@ async function downloadImage(transparent) {
   for (const seg of segments) {
     if (seg.hasBg && seg.text.trim()) {
       ctx.fillStyle = colorPicker.value;
-      ctx.fillRect(5, y, seg.width + (paddingX * 2) + (strokePadding * 2), lineHeight);
+      ctx.fillRect(5 + strokePadding, y, seg.width + (paddingX * 2), lineHeight);
     }
 
     ctx.fillStyle = seg.color;
     if (strokeWidth > 0) {
       ctx.strokeStyle = strokeColorPicker.value;
-      ctx.lineWidth = strokeWidth * 2;
+      ctx.lineWidth = strokeWidth;
       ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.miterLimit = 1;
       ctx.strokeText(seg.text, 5 + paddingX + strokePadding, y + paddingY);
     }
     ctx.fillText(seg.text, 5 + paddingX + strokePadding, y + paddingY);
